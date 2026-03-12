@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M300 Energy Compacts — Interactive Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #1B3A6B;
+    --orange: #E87722;
+    --teal:   #008080;
+    --sky:    #6BBDE3;
+    --green:  #3AAA35;
+    --yellow: #F5C400;
+    --red:    #C0392B;
+    --bg:     #F4F6FA;
+    --white:  #FFFFFF;
+    --text:   #1a1a2e;
+    --muted:  #6b7280;
+    --border: #DDE3EE;
+    --card:   #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, #0d2240 60%, #003366 100%);
+    padding: 0; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  }
+  .header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; gap: 20px;
+  }
+  .header-brand { display: flex; align-items: center; gap: 14px; }
+  .logo-pill {
+    background: var(--orange); color: #fff; font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 13px; letter-spacing: 1.5px;
+    padding: 5px 12px; border-radius: 4px;
+  }
+  header h1 {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 22px; color: #fff; letter-spacing: 0.3px;
+  }
+  header .subtitle { color: rgba(255,255,255,0.6); font-size: 11.5px; margin-top: 1px; }
+  .header-stats { display: flex; gap: 24px; }
+  .hstat { text-align: center; }
+  .hstat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 26px; color: var(--orange); }
+  .hstat-lbl { font-size: 10px; color: rgba(255,255,255,0.55); letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--navy); border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 0 28px; display: flex; gap: 2px; overflow-x: auto;
+  }
+  nav button {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+    font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); background: none; border: none;
+    padding: 10px 18px; cursor: pointer; white-space: nowrap;
+    border-bottom: 3px solid transparent; transition: all 0.2s;
+  }
+  nav button:hover { color: rgba(255,255,255,0.85); }
+  nav button.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* ── MAIN CONTENT ── */
+  main { padding: 24px 28px; max-width: 1600px; margin: 0 auto; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 20px; margin-bottom: 20px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+  .filter-bar label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+  .filter-bar select, .filter-bar input {
+    font-family: 'Barlow', sans-serif; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 10px; background: var(--bg); color: var(--text);
+    outline: none; cursor: pointer; transition: border 0.2s;
+  }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--teal); }
+  .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+    cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+  /* ── GRID LAYOUTS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+  .span-full { grid-column: 1 / -1; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .kpi {
+    flex: 1; min-width: 140px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+    border-left: 4px solid var(--navy); position: relative; overflow: hidden;
+  }
+  .kpi::after {
+    content: ''; position: absolute; right: -20px; top: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(27,58,107,0.04);
+  }
+  .kpi.orange { border-left-color: var(--orange); }
+  .kpi.teal   { border-left-color: var(--teal); }
+  .kpi.green  { border-left-color: var(--green); }
+  .kpi.yellow { border-left-color: var(--yellow); }
+  .kpi.red    { border-left-color: var(--red); }
+  .kpi-label { font-size: 10.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .kpi-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; color: var(--navy); line-height: 1; }
+  .kpi-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── CHART CARDS ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; margin-bottom: 18px;
+  }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; color: var(--navy); }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-badge {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px;
+    background: rgba(27,58,107,0.08); color: var(--navy); white-space: nowrap;
+  }
+  .card canvas { width: 100% !important; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead tr { background: var(--navy); }
+  thead th { color: #fff; font-weight: 600; padding: 10px 14px; text-align: left; font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+  tbody tr:hover { background: rgba(27,58,107,0.03); }
+  tbody td { padding: 9px 14px; color: var(--text); }
+  tbody td.num { text-align: right; font-weight: 500; }
+  .bar-cell { position: relative; }
+  .bar-inline {
+    height: 6px; border-radius: 3px; background: var(--sky);
+    display: inline-block; vertical-align: middle; margin-right: 6px;
+  }
+
+  /* ── DUMBBELL ── */
+  .dumbbell-wrap { overflow-y: auto; max-height: 480px; }
+  .db-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+  .db-label { font-size: 12px; width: 150px; flex-shrink: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .db-track { flex: 1; height: 22px; position: relative; }
+  .db-dot { position: absolute; top: 50%; transform: translate(-50%,-50%); width: 10px; height: 10px; border-radius: 50%; }
+  .db-dot.current { background: var(--sky); border: 2px solid var(--navy); }
+  .db-dot.target  { background: var(--orange); border: 2px solid #c45c00; }
+  .db-line { position: absolute; top: 50%; height: 2px; transform: translateY(-50%); }
+  .db-vals { width: 90px; font-size: 11px; color: var(--muted); text-align: right; flex-shrink: 0; }
+
+  /* ── PROGRESS BARS ── */
+  .progress-track { background: #e8ecf4; border-radius: 4px; height: 8px; overflow: hidden; margin: 4px 0; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-sq  { width: 12px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── COUNTRY SELECTOR ── */
+  .country-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip {
+    font-size: 11px; padding: 3px 9px; border-radius: 14px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+    transition: all 0.15s; user-select: none;
+  }
+  .chip.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px;
+    color: var(--navy); border-left: 4px solid var(--orange); padding-left: 12px;
+    margin-bottom: 18px; letter-spacing: 0.2px;
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip-box {
+    position: fixed; background: rgba(10,20,50,0.95); color: #fff;
+    padding: 10px 14px; border-radius: 8px; font-size: 12px;
+    pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 999;
+    max-width: 220px; line-height: 1.5;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .span-2, .span-3 { grid-column: span 1; }
+    .header-stats { display: none; }
+    header h1 { font-size: 16px; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── ANIMATE ENTRANCE ── */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  .card, .kpi { animation: fadeUp 0.35s ease both; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="logo-pill">SEforALL</div>
+      <div>
+        <h1>M300 Energy Compacts — Analytics Dashboard</h1>
+        <div class="subtitle">Mission 300 · 30 African Countries · 2025–2030 Commitments</div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="hstat"><div class="hstat-val">30</div><div class="hstat-lbl">Countries</div></div>
+      <div class="hstat"><div class="hstat-val">$290B+</div><div class="hstat-lbl">Investment</div></div>
+      <div class="hstat"><div class="hstat-val">460M</div><div class="hstat-lbl">Access Gap</div></div>
+      <div class="hstat"><div class="hstat-val">2030</div><div class="hstat-lbl">Target Year</div></div>
+    </div>
+  </div>
+  <nav>
+    <button class="active" onclick="showTab('overview')">Overview</button>
+    <button onclick="showTab('access')">Electricity Access</button>
+    <button onclick="showTab('generation')">Generation & Renewables</button>
+    <button onclick="showTab('cooking')">Clean Cooking</button>
+    <button onclick="showTab('finance')">Finance</button>
+    <button onclick="showTab('utility')">Utility Performance</button>
+    <button onclick="showTab('country')">Country Deep-Dive</button>
+  </nav>
+</header>
+
+<div class="tooltip-box" id="tooltip"></div>
+<main>
+
+<!-- ═══════════════════════ OVERVIEW ═══════════════════════ -->
+<div class="tab-content active" id="tab-overview">
+
+  <div class="kpi-row">
+    <div class="kpi orange"><div class="kpi-label">Total Investment Committed</div><div class="kpi-value">$290B</div><div class="kpi-sub">Across 29 reporting countries</div></div>
+    <div class="kpi teal"><div class="kpi-label">People Without Electricity (Reported)</div><div class="kpi-value">338M</div><div class="kpi-sub">Of 460M derived total gap</div></div>
+    <div class="kpi green"><div class="kpi-label">Avg Electricity Access Target</div><div class="kpi-value">90%</div><div class="kpi-sub">By 2030 (current avg: 55%)</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Avg Renewable Share Target</div><div class="kpi-value">57%</div><div class="kpi-sub">Current avg: 41%</div></div>
+    <div class="kpi red"><div class="kpi-label">Countries Targeting Universal Access</div><div class="kpi-value">17</div><div class="kpi-sub">100% electricity by 2030</div></div>
+    <div class="kpi"><div class="kpi-label">Avg Clean Cooking Target</div><div class="kpi-value">57%</div><div class="kpi-sub">Current avg: 24%</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Electricity Access — Current vs 2030 Target</div><div class="card-sub">All 30 countries ranked by current access rate</div></div>
+        <div class="card-badge">Dumbbell</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--sky);border:2px solid var(--navy)"></div> Current</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange);border:2px solid #c45c00"></div> 2030 Target</div>
+      </div>
+      <div style="margin-top:12px;" id="dumbbell-access"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Electricity Access Gap (Current)</div><div class="card-sub">Million people without electricity — derived</div></div>
+        <div class="card-badge">Bar</div>
+      </div>
+      <canvas id="chart-gap" height="340"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Renewable Share — Current vs Target</div><div class="card-sub">Percentage of generation from renewables</div></div>
+        <div class="card-badge">Dumbbell</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--sky);border:2px solid var(--navy)"></div> Current</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green);border:2px solid #1e7a1a"></div> 2030 Target</div>
+      </div>
+      <div style="margin-top:12px;" id="dumbbell-renew"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Clean Cooking — Current vs 2030 Target</div><div class="card-sub">% population with access to clean cooking</div></div>
+        <div class="card-badge">Dumbbell</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--sky);border:2px solid var(--navy)"></div> Current</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange);border:2px solid #c45c00"></div> 2030 Target</div>
+      </div>
+      <div style="margin-top:12px;" id="dumbbell-cooking"></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card span-2">
+      <div class="card-header">
+        <div><div class="card-title">Investment Required by Country (USD Billion)</div><div class="card-sub">Total compact investment commitments</div></div>
+        <div class="card-badge">Bar</div>
+      </div>
+      <canvas id="chart-invest-overview" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Countries Reaching Universal Access</div><div class="card-sub">Target distribution</div></div>
+        <div class="card-badge">Donut</div>
+      </div>
+      <canvas id="chart-universal" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ ELECTRICITY ACCESS ═══════════════════════ -->
+<div class="tab-content" id="tab-access">
+  <div class="filter-bar">
+    <label>Sort by:</label>
+    <select id="access-sort" onchange="renderAccess()">
+      <option value="current">Current Access Rate</option>
+      <option value="target">Target 2030</option>
+      <option value="gap">Access Gap (current)</option>
+      <option value="reduction">Gap Reduction</option>
+      <option value="alpha">Alphabetical</option>
+    </select>
+    <label>Show:</label>
+    <div class="pill-group">
+      <span class="pill active" onclick="togglePill(this,'access-urban')" id="pill-access-urban">Urban/Rural</span>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi orange"><div class="kpi-label">Total Electricity Access Gap</div><div class="kpi-value" id="kpi-total-gap">460M</div><div class="kpi-sub">People without electricity (all 30 countries)</div></div>
+    <div class="kpi teal"><div class="kpi-label">Projected Residual Gap 2030</div><div class="kpi-value">134M</div><div class="kpi-sub">If all targets met</div></div>
+    <div class="kpi green"><div class="kpi-label">People to Connect 2024–2030</div><div class="kpi-value">475M</div><div class="kpi-sub">Accounting for population growth</div></div>
+    <div class="kpi"><div class="kpi-label">Highest Access Gap</div><div class="kpi-value">Nigeria</div><div class="kpi-sub">90.8M people</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-header">
+        <div><div class="card-title">Current vs 2030 Target — Electricity Access (%)</div><div class="card-sub">Grouped bar chart — all 30 countries</div></div>
+      </div>
+      <canvas id="chart-access-grouped" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Urban vs Rural Access Gap</div><div class="card-sub">Where data reported by countries</div></div>
+      </div>
+      <canvas id="chart-urban-rural" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Electricity Access Gap — Current vs 2030</div><div class="card-sub">Million people still unserved</div></div>
+      </div>
+      <canvas id="chart-gap-change" height="280"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Access Ambition Score — Target Uplift</div><div class="card-sub">2030 target minus current rate (percentage point increase committed)</div></div>
+    </div>
+    <canvas id="chart-ambition" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ═══════════════════════ GENERATION & RENEWABLES ═══════════════════════ -->
+<div class="tab-content" id="tab-generation">
+  <div class="kpi-row">
+    <div class="kpi orange"><div class="kpi-label">Total Installed Capacity (Current)</div><div class="kpi-value">~75 GW</div><div class="kpi-sub">Across 29 reporting countries</div></div>
+    <div class="kpi teal"><div class="kpi-label">Target Capacity 2030</div><div class="kpi-value">~113 GW</div><div class="kpi-sub">Across countries with targets</div></div>
+    <div class="kpi green"><div class="kpi-label">Avg Renewable Share (Current)</div><div class="kpi-value">41%</div><div class="kpi-sub">Weighted average</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Countries Targeting 100% Renewables</div><div class="kpi-value">2</div><div class="kpi-sub">Kenya & Malawi</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Installed Capacity — Current vs 2030 Target (MW)</div><div class="card-sub">Countries with both values reported</div></div>
+      </div>
+      <canvas id="chart-capacity" height="300"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Renewable Share — Current vs Target</div><div class="card-sub">% of total generation from renewable sources</div></div>
+      </div>
+      <canvas id="chart-renew-share" height="300"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card span-2">
+      <div class="card-header">
+        <div><div class="card-title">2030 Technology Mix — Solar / Wind / Hydro / Gas Targets (MW)</div><div class="card-sub">Countries with disaggregated technology targets</div></div>
+      </div>
+      <canvas id="chart-tech-mix" height="260"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Technology Share — All Countries</div><div class="card-sub">Total MW across reporting countries</div></div>
+      </div>
+      <canvas id="chart-tech-donut" height="260"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Renewable Capacity — Current vs 2030 Target (MW)</div></div>
+    </div>
+    <canvas id="chart-renew-capacity" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CLEAN COOKING ═══════════════════════ -->
+<div class="tab-content" id="tab-cooking">
+  <div class="kpi-row">
+    <div class="kpi orange"><div class="kpi-label">Avg Clean Cooking Access (Current)</div><div class="kpi-value">24%</div><div class="kpi-sub">Across 29 reporting countries</div></div>
+    <div class="kpi teal"><div class="kpi-label">Avg Clean Cooking Target 2030</div><div class="kpi-value">57%</div><div class="kpi-sub">More than doubling in 6 years</div></div>
+    <div class="kpi green"><div class="kpi-label">Countries Targeting 100%</div><div class="kpi-value">2</div><div class="kpi-sub">Kenya & Nigeria</div></div>
+    <div class="kpi red"><div class="kpi-label">Largest Clean Cooking Gap</div><div class="kpi-value">Nigeria</div><div class="kpi-sub">~172M people</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-header">
+        <div><div class="card-title">Clean Cooking Access — Current vs 2030 Target</div><div class="card-sub">% population with clean cooking access — sorted by current rate</div></div>
+      </div>
+      <canvas id="chart-cooking-grouped" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Clean Cooking Ambition — Uplift Committed</div><div class="card-sub">Percentage point increase from current to 2030 target</div></div>
+      </div>
+      <canvas id="chart-cooking-uplift" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Cooking Fuel Technology Mix (Current)</div><div class="card-sub">LPG · Electricity · Biogas — where data reported</div></div>
+      </div>
+      <canvas id="chart-cooking-tech" height="280"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ FINANCE ═══════════════════════ -->
+<div class="tab-content" id="tab-finance">
+  <div class="kpi-row">
+    <div class="kpi orange"><div class="kpi-label">Total Investment (29 countries)</div><div class="kpi-value">$290B</div><div class="kpi-sub">Nigeria alone: $32.7B</div></div>
+    <div class="kpi teal"><div class="kpi-label">Total Public Financing</div><div class="kpi-value">$142B</div><div class="kpi-sub">~49% of total</div></div>
+    <div class="kpi green"><div class="kpi-label">Total Private Financing</div><div class="kpi-value">$130B</div><div class="kpi-sub">~45% of total</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Avg Private Finance Share</div><div class="kpi-value">47%</div><div class="kpi-sub">Across countries with both reported</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card span-2">
+      <div class="card-header">
+        <div><div class="card-title">Total Investment Required — Public vs Private Split (USD Billion)</div><div class="card-sub">Stacked bar — countries sorted by total investment</div></div>
+      </div>
+      <canvas id="chart-finance-stack" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Private Finance Share (%)</div><div class="card-sub">Countries ranked by private sector mobilisation</div></div>
+      </div>
+      <canvas id="chart-private-share" height="300"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Investment per Capita (USD)</div><div class="card-sub">Total investment ÷ 2024 population</div></div>
+      </div>
+      <canvas id="chart-invest-capita" height="300"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Investment vs Electricity Access Gap — Financing Efficiency Signal</div><div class="card-sub">Bubble size = 2024 population. X = current access gap (M people). Y = total investment ($B). Larger bubble = larger country.</div></div>
+    </div>
+    <canvas id="chart-bubble-invest" height="280"></canvas>
+  </div>
+</div>
+
+<!-- ═══════════════════════ UTILITY PERFORMANCE ═══════════════════════ -->
+<div class="tab-content" id="tab-utility">
+  <div class="kpi-row">
+    <div class="kpi orange"><div class="kpi-label">Avg System Losses (M300)</div><div class="kpi-value">32%</div><div class="kpi-sub">Against avg target of 15%</div></div>
+    <div class="kpi teal"><div class="kpi-label">Avg System Losses (WB UPBEAT)</div><div class="kpi-value">23%</div><div class="kpi-sub">Independent verification</div></div>
+    <div class="kpi green"><div class="kpi-label">Highest Losses Reported</div><div class="kpi-value">50%</div><div class="kpi-sub">Sierra Leone (M300)</div></div>
+    <div class="kpi red"><div class="kpi-label">Countries with Cost Recovery Data</div><div class="kpi-value">9</div><div class="kpi-sub">Limited self-reporting</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">System Losses — M300 vs World Bank UPBEAT</div><div class="card-sub">Data quality cross-check: self-reported vs independent</div></div>
+      </div>
+      <canvas id="chart-losses-compare" height="300"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">System Losses — Current vs Target</div><div class="card-sub">Ambition to reduce T&D losses (%)</div></div>
+      </div>
+      <canvas id="chart-losses-target" height="300"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Utility Health Matrix — Cost Recovery vs Collection Rate</div><div class="card-sub">Quadrant analysis: X = Cost Recovery (%), Y = Collection Rate (%). Upper-right = healthiest utilities. Dot size = population size.</div></div>
+    </div>
+    <canvas id="chart-utility-scatter" height="320"></canvas>
+  </div>
+</div>
+
+<!-- ═══════════════════════ COUNTRY DEEP-DIVE ═══════════════════════ -->
+<div class="tab-content" id="tab-country">
+  <div class="filter-bar">
+    <label>Select Country:</label>
+    <select id="country-select" onchange="renderCountry()">
+    </select>
+  </div>
+
+  <div class="kpi-row" id="country-kpis"></div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title" id="country-radar-title">Country Profile — Normalised Indicators</div><div class="card-sub">Radar chart across key dimensions (0–100 normalised)</div></div>
+      </div>
+      <canvas id="chart-country-radar" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Generation Technology Mix — 2030 Targets</div></div>
+      </div>
+      <canvas id="chart-country-tech" height="280"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Key Indicators — Progress Tracker</div><div class="card-sub">Current (filled) vs 2030 target (outline) for selected country</div></div>
+    </div>
+    <div id="country-progress"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">All Indicators Summary Table</div></div>
+    </div>
+    <div class="table-wrap">
+      <table id="country-table">
+        <thead><tr><th>Category</th><th>Indicator</th><th>Unit</th><th>Value</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════
+const D = {"countries": ["Benin", "Botswana", "Burundi", "Cameroon", "Chad", "Comoros", "C\u00f4te d\u2019Ivoire", "Democratic Republic of Congo", "Ethiopia", "Gambia", "Ghana", "Guinea", "Kenya", "Lesotho", "Liberia", "Madagascar", "Malawi", "Mauritania", "Mozambique", "Namibia", "Niger", "Nigeria", "Republic of Congo", "S\u00e3o Tom\u00e9 & Pr\u00edncipe", "Senegal", "Sierra Leone", "Tanzania", "Togo", "Zambia", "Zimbabwe"], "elec_access_current": [0.426, 0.766, 0.259, 0.74, 0.11, 0.95, 0.64, 0.215, 0.44, 0.737, 0.89, 0.53, 0.75, 0.53, 0.327, 0.36, 0.259, 0.55, 0.601, 0.595, 0.2084, 0.61, 0.3166, 0.84, 0.84, 0.36, 0.784, 0.7, 0.536, 0.62], "elec_access_urban": [0.712, 0.9, 0.663, 0.94, 0.2, 0.8, null, 0.608, null, 0.97, null, 0.89, 0.9, 0.713, 0.5, 0.72, 0.565, 0.91, null, 0.771, null, null, 0.3867, null, 0.971, null, 0.996, null, 0.803, 0.83], "elec_access_rural": [0.131, null, 0.176, 0.25, 0.01, 0.2, null, 0.05, 0.57, 0.45, null, 0.21, 0.68, 0.114, 0.1, 0.11, 0.038, 0.06, null, 0.138, 0.053, null, 0.0101, null, 0.645, null, 0.696, null, 0.349, 0.27], "elec_target_2030": [0.7, 1.0, 0.7, 1.0, 0.9, 1.0, 1.0, 0.62, 0.75, 1.0, 0.998, 1.0, 1.0, 1.0, 0.75, 0.8, 0.7, 1.0, 1.0, 0.7, 0.6, 1.0, 0.813, 1.0, 1.0, 0.78, 1.0, 1.0, 1.0, 1.0], "pop_without_elec": [null, null, 11600000.0, 33000000.0, 14000000.0, 226615.0, null, 60000000.0, null, 633000.0, 3700000.0, 7750000.0, null, null, null, 19000000.0, null, 3400000.0, null, null, null, 86000000.0, null, null, 2800000.0, null, null, null, null, null], "installed_current": [199.8, 892.0, 204.88, 2011.0, 487.0, 53.0, 2907.0, 3067.0, 9761.0, 99.0, 5641.0, 1310.0, 3013.8, 104.7, 126.0, 828.0, 550.0, 615.1, 2922.0, 695.0, 352.0, 12000.0, 748.0, 38.0, null, 271.0, 3404.2, 267.5, 3811.3, 2962.0], "installed_target": [794.0, 950.0, 410.0, 3000.0, 866.0, null, 5128.0, 13576.0, 14000.0, null, 6200.0, 3827.0, 5952.0, null, null, null, 1490.0, null, null, 1149.0, null, null, 3701.0, null, null, 1120.0, null, 1154.5, 10000.0, 5432.0], "new_gen_required": [null, null, null, null, 866.0, null, 1374.0, null, null, null, null, 2517.0, 2938.2, null, null, null, 848.0, null, 3100.0, 454.0, null, null, 2953.0, 60.0, null, null, 1973.0, 894.0, 6200.0, null], "renew_capacity_current": [62.3, 74.6, null, 36.53, null, 13.71, 909.0, null, null, 23.0, 60.8, 817.0, 2627.0, 104.3, 88.0, 240.0, 499.0, null, 2291.0, 498.5, null, null, 214.0, null, 460.0, null, 2011.27, 102.5, 3336.0, 1282.0], "renew_capacity_target": [417.0, 475.0, null, null, 520.0, 33.0, 2283.0, null, null, null, null, 2689.0, 5952.0, null, 238.0, 893.0, null, null, 4892.0, 952.5, null, null, 2697.0, null, null, null, null, 728.5, 9000.0, 2640.0], "solar_target": [null, 1500.0, 254.0, 150.0, 520.0, null, 399.0, 4000.0, 1175.0, 150.0, 850.0, 1086.0, 807.0, 164.0, 172.0, 560.0, null, 50.0, 303.0, 466.5, null, null, null, null, null, 392.0, 463.0, 569.0, 3000.0, 1500.0], "wind_target": [null, 100.0, null, null, null, null, null, null, 1102.0, null, 200.0, null, 966.0, 60.0, null, 16.0, null, 30.0, 245.0, 99.0, 250.0, null, null, null, null, null, 500.0, null, 1192.0, null], "hydro_target": [null, null, 155.5, 600.0, 120.0, 1.95, 829.0, null, 1800.0, null, 150.0, 791.0, 1403.0, 1.1, 150.0, 374.0, null, null, 4344.0, 347.0, 128.0, null, null, 9.0, null, 194.0, 880.0, 57.0, null, null], "gas_target": [null, null, null, null, null, null, null, null, null, 80.0, null, null, null, null, null, null, null, 225.0, 1004.0, null, 240.0, null, 470.0, 10.0, 2200.0, null, null, 250.0, null, null], "battery_target": [null, 140.0, null, null, 60.0, 19.6, null, null, null, 40.0, null, null, 400.0, 600.0, 5.0, null, null, 30.0, null, 96.0, 20.0, null, null, null, null, null, null, 156.0, null, null], "peak_demand_current": [null, 678.0, null, null, null, 29.5, null, null, null, null, null, null, null, 209.0, 108.0, null, null, null, null, 673.0, null, null, null, null, null, 320.0, 1888.72, null, 2500.0, 2000.0], "sys_losses_current": [0.2462, 0.1435, null, null, 0.39, 0.37, null, 0.46, 0.27, 0.21, 0.27, 0.3, 0.1569, null, 0.454, 0.3, null, 0.3, 0.24, null, null, 0.42, 0.45, 0.34, null, 0.5, 0.142, 0.16, null, null], "sys_losses_wb": [0.24, 0.1535, 0.1922, null, 0.37, null, 0.1498, 0.312, null, 0.176, null, 0.19, 0.23, 0.1287, 0.32, 0.2738, 0.2099, 0.2292, 0.26, null, 0.2355, null, null, 0.243, 0.177, null, 0.1449, 0.1604, null, 0.175], "sys_losses_target": [0.15, null, null, 0.1, 0.15, 0.2, null, 0.15, 0.19, 0.18, 0.23, 0.08, 0.128, null, null, 0.16, null, 0.2, null, null, null, null, null, 0.18, null, null, null, 0.12, null, null], "grid_connections_new": [928000.0, 220000.0, 1900000.0, 8000000.0, 17500000.0, 62310.0, 11200000.0, 60000000.0, 6460000.0, 20000.0, 660000.0, 7750000.0, 5100000.0, 26400.0, 100000.0, 700000.0, 1150000.0, 3389524.0, 4900000.0, 175000.0, 2077515.0, 4700000.0, 953000.0, 8000.0, 260149.0, 160000.0, 8300000.0, 1300000.0, 1459560.0, 1200000.0], "total_investment": [2360000000.0, 2520000000.0, 3490000000.0, 12554000000.0, 1950000000.0, 390210000.0, 6560000000.0, 37048660000.0, 9646040000.0, 552000000.0, 4404000000.0, 8900000000.0, 18730000000.0, 1970000000.0, 1250000000.0, 7200000000.0, 5500000000.0, 2450000000.0, 18620000000.0, 1764000000.0, null, 32700000000.0, 11543000000.0, 297000000.0, 6300000000.0, 2245000000.0, 12889999999.0, 3000000000.0, 11880000000.0, 9134890000.0], "public_financing": [1420000000.0, 1412000000.0, 1950000000.0, null, 1299744000.0, 117000000.0, 4620000000.0, 17314100000.0, 6584240000.0, 305000000.0, 1793000000.0, 1200000000.0, 10820000000.0, 499700000.0, null, 2880000000.0, null, null, 9923000000.0, 1353000000.0, null, 17200000000.0, 3276000000.0, 108000000.0, null, 835000000.0, 8850000000.0, 1320000000.0, null, null], "private_financing": [940000000.0, 1108000000.0, 1540000000.0, 6372000000.0, 650256000.0, 273000000.0, 1940000000.0, 19734550000.0, 3061800000.0, 247000000.0, 2611000000.0, 7641000000.0, 7910000000.0, 1470000000.0, 150000000.0, 4320000000.0, 162800000.0, 1230000000.0, 8698000000.0, 411000000.0, 527000000.0, 15500000000.0, 8267000000.0, 190000000.0, 2300000000.0, 1410000000.0, 4039000000.0, 1680000000.0, 9500000000.0, 4420000000.0], "cost_recovery_current": [null, null, null, null, null, 0.566, null, null, 0.6, null, null, 0.45, null, null, 0.63, null, 1.0, 0.7747, null, null, null, null, 0.0056, null, 0.0072, null, 0.8, null, null, null], "collection_rate_current": [null, null, null, 0.72, 0.51, 0.8, null, 0.61, null, null, 0.86, null, null, null, null, 0.8, null, null, null, null, null, null, 0.73, null, null, 0.4, 0.96, null, null, null], "renew_share_current": [0.16, 0.082, 0.83, 0.05, 0.09, 0.09, 0.31, 0.95, 0.95, 0.13, 0.04, 0.62, 0.83, 0.996, 0.67, 0.45, 0.9, 0.4436, 0.784, 0.54, 0.05, 0.22, 0.29, 0.05, 0.29, 0.46, 0.618, 0.26, 0.862, 0.43], "renew_share_target": [0.3, 0.5, 0.99, 0.1, 0.3, 0.45, 0.45, 0.95, null, 0.3, 0.1, 0.7, 1.0, 1.0, 0.75, 0.85, 0.961, 0.7, 0.806, 0.7, 0.3, 0.5, 0.728, 0.5, 0.4, 0.52, 0.75, 0.63, null, 0.486], "cooking_current": [0.105, 0.666, 0.001, 0.234, null, 0.005, 0.2, 0.05, 0.08, 0.25, 0.369, 0.12, 0.344, 0.452, null, 0.14, 0.245, 0.54, 0.17, 0.485, 0.06, 0.26, 0.396, 0.62, 0.32, 0.015, 0.069, 0.14, 0.089, 0.386], "cooking_target": [0.5, 0.9, 0.4, 0.4, 0.46, 0.3, 0.5, 0.3, 0.5774, 0.5, 0.5, 0.35, 1.0, 0.75, null, 0.5, 0.75, null, 0.54, 0.61, 0.12, 1.0, 0.813, 0.75, null, 0.25, 0.75, 0.8, 0.4, 0.7], "elec_gap_current": [8.323, 0.585, 10.374, 7.566, 18.067, 0.045, 11.484, 85.8005, 73.976, 0.7364, 3.784, 6.956, 14.1, 1.081, 3.7688, 20.48, 16.0797, 2.34, 13.8054, 1.215, 21.3732, 90.753, 4.30542, 0.032, 2.96, 5.504, 14.8176, 2.85, 9.8832, 6.308], "elec_gap_2030": [4.986, 0.0, 4.854, 0.0, 2.421, 0.0, 0.0, 49.9814, 38.215, 0.0, 0.07644, 0.0, 0.0, 0.0, 1.5925, 7.338, 7.548, 0.0, 0.0, 1.017, 13.008, 0.0, 1.36136, 0.0, 0.0, 2.1318, 0.0, 0.0, 0.0, 0.0], "elec_gap_reduction": [3.337, 0.585, 5.52, 7.566, 15.646, 0.045, 11.484, 35.8191, 35.761, 0.7364, 3.70756, 6.956, 14.1, 1.081, 2.1763, 13.142, 8.5317, 2.34, 13.8054, 0.198, 8.3652, 90.753, 2.94406, 0.032, 2.96, 3.3722, 14.8176, 2.85, 9.8832, 6.308], "cooking_gap_current": [12.9775, 0.835, 13.93, 22.2906, 20.3, 0.8955, 25.52, 103.835, 121.532, 2.1, 21.7064, 13.024, 36.9984, 1.2604, 5.5552, 27.52, 16.3835, 2.392, 28.718, 1.545, 25.38, 172.198, 3.8052, 0.076, 18.5, 8.471, 63.8666, 8.17, 19.4043, 10.1924], "cooking_gap_2030": [8.31, 0.277, 9.709, 20.266, 13.072, 0.675, 18.35, 92.073, 64.597, 1.565, 19.111, 10.925, 0.0, 0.623, 5.5552, 18.347, 6.29, 2.392, 18.79, 1.322, 28.616, 0.0, 1.362, 0.066, 18.5, 7.271, 20.228, 2.159, 15.015, 5.583], "pop_2024": [14.5, 2.5, 14.0, 29.1, 20.3, 0.9, 31.9, 109.3, 132.1, 2.8, 34.4, 14.8, 56.4, 2.3, 5.6, 32.0, 21.7, 5.2, 34.6, 3.0, 27.0, 232.7, 6.3, 0.2, 18.5, 8.6, 68.6, 9.5, 21.3, 16.6], "pop_2030": [16.62, 2.77, 16.18, 33.78, 24.21, 0.96, 36.7, 131.53, 152.86, 3.13, 38.22, 16.81, 63.1, 2.49, 6.37, 36.69, 25.16, 6.06, 40.85, 3.39, 32.52, 262.38, 7.28, 0.26, 21.16, 9.69, 80.91, 10.79, 25.02, 18.61], "cooking_lpg": [null, 0.427, null, null, null, null, 0.2, 0.02, null, null, 0.31, 0.01, 0.307, null, null, 0.01, 0.003, null, 0.14, 0.218, 0.046, 0.105, null, 0.189, 0.34, 0.009, 0.032, 0.11, 0.003, null], "cooking_elec": [null, 0.244, null, null, null, null, null, null, null, null, null, null, 0.013, null, null, 0.01, 0.017, null, null, null, null, 0.01, null, 0.0008, 0.001, 0.0, null, null, 0.158, null], "cooking_biogas": [null, null, null, null, null, null, null, null, null, null, null, null, 0.003, null, null, 0.01, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null]};
+
+// ══════════════════════════════════════════════════════════════
+// COLORS
+// ══════════════════════════════════════════════════════════════
+const C = {
+  navy: '#1B3A6B', orange: '#E87722', teal: '#008080',
+  sky: '#6BBDE3', green: '#3AAA35', yellow: '#F5C400',
+  red: '#C0392B', purple: '#7B68EE',
+  alpha: (hex, a) => hex + Math.round(a*255).toString(16).padStart(2,'0')
+};
+
+// ══════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════
+const N = D.countries.length;
+const chartInstances = {};
+
+function v(arr, i) { return arr[i]; }
+function pct(x) { return x !== null ? (x*100).toFixed(1)+'%' : '—'; }
+function fmt(x, dp=1) { return x !== null ? x.toFixed(dp) : '—'; }
+function fmtB(x) { if (x===null) return '—'; return x >= 1e9 ? '$'+(x/1e9).toFixed(1)+'B' : x >= 1e6 ? '$'+(x/1e6).toFixed(0)+'M' : '$'+x.toFixed(0); }
+
+function sortedIdxBy(arr, ascending=false) {
+  return arr.map((v,i)=>({v,i}))
+    .filter(x=>x.v!==null)
+    .sort((a,b)=> ascending ? a.v-b.v : b.v-a.v)
+    .map(x=>x.i);
+}
+
+function mkChart(id, type, data, opts={}) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  if (chartInstances[id]) { chartInstances[id].destroy(); }
+  chartInstances[id] = new Chart(canvas, { type, data, options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+    scales: {},
+    ...opts
+  }});
+  return chartInstances[id];
+}
+
+const defaultScales = (xLabel='', yLabel='', pctY=false, pctX=false) => ({
+  x: {
+    grid: { color: '#f0f0f0' },
+    ticks: { font: { family:'Barlow', size:10 }, color:'#555',
+      callback: pctX ? v => (v*100).toFixed(0)+'%' : undefined }
+  },
+  y: {
+    grid: { color: '#f0f0f0' },
+    ticks: { font: { family:'Barlow', size:10 }, color:'#555',
+      callback: pctY ? v => (v*100).toFixed(0)+'%' : undefined }
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// DUMBBELL CHART (custom HTML)
+// ══════════════════════════════════════════════════════════════
+function makeDumbbell(containerId, currentArr, targetArr, dotCurrentColor, dotTargetColor, formatFn) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const sorted = D.countries.map((c,i)=>({c,i, cur:currentArr[i], tgt:targetArr[i]}))
+    .filter(x=>x.cur!==null || x.tgt!==null)
+    .sort((a,b)=>(a.cur||0)-(b.cur||0));
+
+  const maxVal = Math.max(...sorted.map(x=>Math.max(x.cur||0, x.tgt||0)));
+
+  let html = '<div class="dumbbell-wrap">';
+  for (const {c, cur, tgt} of sorted) {
+    const pCur = cur !== null ? (cur/maxVal*100) : null;
+    const pTgt = tgt !== null ? (tgt/maxVal*100) : null;
+    const left  = Math.min(pCur||pTgt, pTgt||pCur);
+    const right = Math.max(pCur||pTgt, pTgt||pCur);
+    const lineColor = (tgt||0) > (cur||0) ? '#d1fae5' : '#fee2e2';
+
+    html += `<div class="db-row">
+      <div class="db-label" title="${c}">${c}</div>
+      <div class="db-track">
+        ${(left!==null&&right!==null) ? `<div class="db-line" style="left:${left}%;width:${right-left}%;background:${lineColor}"></div>` : ''}
+        ${pCur!==null ? `<div class="db-dot current" style="left:${pCur}%;background:${dotCurrentColor}"></div>` : ''}
+        ${pTgt!==null ? `<div class="db-dot target" style="left:${pTgt}%;background:${dotTargetColor}"></div>` : ''}
+      </div>
+      <div class="db-vals">${formatFn(cur)} → ${formatFn(tgt)}</div>
+    </div>`;
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  renderTab(id);
+}
+
+const rendered = {};
+function renderTab(id) {
+  if (rendered[id]) return;
+  rendered[id] = true;
+  if (id==='overview')    renderOverview();
+  if (id==='access')      renderAccess();
+  if (id==='generation')  renderGeneration();
+  if (id==='cooking')     renderCooking();
+  if (id==='finance')     renderFinance();
+  if (id==='utility')     renderUtility();
+  if (id==='country')     initCountry();
+}
+
+// ══════════════════════════════════════════════════════════════
+// OVERVIEW TAB
+// ══════════════════════════════════════════════════════════════
+function renderOverview() {
+  // Dumbbell access
+  makeDumbbell('dumbbell-access', D.elec_access_current, D.elec_target_2030,
+    C.sky, C.orange, x => x!==null ? (x*100).toFixed(0)+'%' : '—');
+
+  // Dumbbell renewables
+  makeDumbbell('dumbbell-renew', D.renew_share_current, D.renew_share_target,
+    C.sky, C.green, x => x!==null ? (x*100).toFixed(0)+'%' : '—');
+
+  // Dumbbell cooking
+  makeDumbbell('dumbbell-cooking', D.cooking_current, D.cooking_target,
+    C.sky, C.orange, x => x!==null ? (x*100).toFixed(0)+'%' : '—');
+
+  // Gap bar chart
+  const gapIdx = sortedIdxBy(D.elec_gap_current);
+  mkChart('chart-gap', 'bar', {
+    labels: gapIdx.map(i=>D.countries[i]),
+    datasets: [{
+      label: 'Electricity Access Gap (M people)',
+      data: gapIdx.map(i=>D.elec_gap_current[i]),
+      backgroundColor: gapIdx.map(i => D.elec_gap_current[i] > 20 ? C.red : D.elec_gap_current[i] > 5 ? C.orange : C.sky),
+      borderRadius: 4
+    }]
+  }, {
+    plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.raw.toFixed(1)}M people`}}},
+    scales: { ...defaultScales(), x:{ticks:{maxRotation:45, font:{size:9}}, grid:{display:false}} }
+  });
+
+  // Investment overview
+  const invIdx = D.total_investment.map((v,i)=>({v,i})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v).map(x=>x.i);
+  mkChart('chart-invest-overview', 'bar', {
+    labels: invIdx.map(i=>D.countries[i]),
+    datasets: [{
+      data: invIdx.map(i=>D.total_investment[i]/1e9),
+      backgroundColor: C.alpha(C.navy, 0.7),
+      hoverBackgroundColor: C.orange,
+      borderRadius: 3
+    }]
+  }, {
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.raw.toFixed(1)+'B'}}},
+    scales:{...defaultScales(), x:{ticks:{maxRotation:45, font:{size:8}}, grid:{display:false}}, y:{ticks:{callback:v=>'$'+v+'B'}}}
+  });
+
+  // Universal access donut
+  const uni100 = D.elec_target_2030.filter(x=>x!==null && x>=0.999).length;
+  const uni90 = D.elec_target_2030.filter(x=>x!==null && x>=0.9 && x<0.999).length;
+  const uni75 = D.elec_target_2030.filter(x=>x!==null && x>=0.75 && x<0.9).length;
+  const uniLow = D.elec_target_2030.filter(x=>x!==null && x<0.75).length;
+  mkChart('chart-universal', 'doughnut', {
+    labels:['100% (Universal)','90–99%','75–89%','Below 75%'],
+    datasets:[{
+      data:[uni100, uni90, uni75, uniLow],
+      backgroundColor:[C.green, C.teal, C.orange, C.red],
+      borderWidth:2, borderColor:'#fff'
+    }]
+  },{
+    plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Barlow',size:10},padding:10}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} countries`}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ACCESS TAB
+// ══════════════════════════════════════════════════════════════
+function renderAccess() {
+  const sortVal = document.getElementById('access-sort')?.value || 'current';
+  let sortArr = {
+    'current': D.elec_access_current,
+    'target': D.elec_target_2030,
+    'gap': D.elec_gap_current,
+    'reduction': D.elec_gap_reduction,
+    'alpha': D.countries
+  }[sortVal];
+
+  const idx = sortVal === 'alpha'
+    ? D.countries.map((_,i)=>i).sort((a,b)=>D.countries[a].localeCompare(D.countries[b]))
+    : sortedIdxBy(sortArr, sortVal==='current'||sortVal==='target');
+
+  const labs = idx.map(i=>D.countries[i]);
+
+  // Grouped bar: current vs target
+  mkChart('chart-access-grouped', 'bar', {
+    labels: labs,
+    datasets:[
+      { label:'Current Access Rate', data: idx.map(i=>D.elec_access_current[i]),
+        backgroundColor: C.alpha(C.navy, 0.75), borderRadius:3 },
+      { label:'2030 Target', data: idx.map(i=>D.elec_target_2030[i]),
+        backgroundColor: C.alpha(C.orange, 0.8), borderRadius:3 }
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw*100).toFixed(1)+'%'}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Urban vs Rural
+  const urIdx = D.countries.map((_,i)=>i).filter(i=>D.elec_access_urban[i]!==null||D.elec_access_rural[i]!==null);
+  mkChart('chart-urban-rural', 'bar', {
+    labels: urIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Urban',data:urIdx.map(i=>D.elec_access_urban[i]),backgroundColor:C.alpha(C.teal,0.8),borderRadius:3},
+      {label:'Rural',data:urIdx.map(i=>D.elec_access_rural[i]),backgroundColor:C.alpha(C.sky,0.7),borderRadius:3},
+      {label:'National',data:urIdx.map(i=>D.elec_access_current[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—')}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Gap change current vs 2030
+  const gapIdx2 = sortedIdxBy(D.elec_gap_current);
+  mkChart('chart-gap-change', 'bar', {
+    labels: gapIdx2.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Current Gap (M)',data:gapIdx2.map(i=>D.elec_gap_current[i]),backgroundColor:C.alpha(C.red,0.7),borderRadius:3},
+      {label:'2030 Residual Gap (M)',data:gapIdx2.map(i=>D.elec_gap_2030[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?ctx.raw.toFixed(2)+'M':'—'}`}}},
+    scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Ambition score
+  const ambition = D.countries.map((_,i)=>{
+    const c=D.elec_access_current[i], t=D.elec_target_2030[i];
+    return (c!==null&&t!==null) ? (t-c) : null;
+  });
+  const ambIdx = sortedIdxBy(ambition);
+  mkChart('chart-ambition', 'bar', {
+    labels: ambIdx.map(i=>D.countries[i]),
+    datasets:[{
+      label:'Target Uplift (pp)',
+      data: ambIdx.map(i=>ambition[i]),
+      backgroundColor: ambIdx.map(i=>(ambition[i]||0)>0.4 ? C.green : (ambition[i]||0)>0.2 ? C.teal : C.sky),
+      borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'+'+(ctx.raw*100).toFixed(1)+' pp'}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// GENERATION TAB
+// ══════════════════════════════════════════════════════════════
+function renderGeneration() {
+  // Capacity current vs target
+  const capIdx = D.countries.map((_,i)=>i).filter(i=>D.installed_current[i]!==null||D.installed_target[i]!==null)
+    .sort((a,b)=>(D.installed_current[b]||0)-(D.installed_current[a]||0));
+  mkChart('chart-capacity', 'bar', {
+    labels: capIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Current (MW)',data:capIdx.map(i=>D.installed_current[i]),backgroundColor:C.alpha(C.navy,0.75),borderRadius:3},
+      {label:'2030 Target (MW)',data:capIdx.map(i=>D.installed_target[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?ctx.raw.toFixed(0)+' MW':'—'}`}}},
+    scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Renewable share grouped
+  const rsIdx = D.countries.map((_,i)=>i).filter(i=>D.renew_share_current[i]!==null)
+    .sort((a,b)=>D.renew_share_current[a]-D.renew_share_current[b]);
+  mkChart('chart-renew-share', 'bar', {
+    labels: rsIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Current %',data:rsIdx.map(i=>D.renew_share_current[i]),backgroundColor:C.alpha(C.teal,0.75),borderRadius:3},
+      {label:'2030 Target %',data:rsIdx.map(i=>D.renew_share_target[i]),backgroundColor:C.alpha(C.green,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(0)+'%':'—'}`}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Technology mix stacked
+  const techIdx = D.countries.map((_,i)=>i).filter(i=>
+    D.solar_target[i]!==null||D.wind_target[i]!==null||D.hydro_target[i]!==null||D.gas_target[i]!==null)
+    .sort((a,b)=>{
+      const s=x=>D.solar_target[x]||0+D.wind_target[x]||0+D.hydro_target[x]||0+D.gas_target[x]||0;
+      return s(b)-s(a);
+    });
+  mkChart('chart-tech-mix', 'bar', {
+    labels: techIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Solar (MW)',data:techIdx.map(i=>D.solar_target[i]),backgroundColor:C.alpha(C.yellow,0.85),borderRadius:2},
+      {label:'Wind (MW)',data:techIdx.map(i=>D.wind_target[i]),backgroundColor:C.alpha(C.sky,0.85),borderRadius:2},
+      {label:'Hydro (MW)',data:techIdx.map(i=>D.hydro_target[i]),backgroundColor:C.alpha(C.teal,0.85),borderRadius:2},
+      {label:'Gas (MW)',data:techIdx.map(i=>D.gas_target[i]),backgroundColor:C.alpha(C.red,0.75),borderRadius:2}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}}},
+    scales:{
+      ...defaultScales(), x:{stacked:true,ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},
+      y:{stacked:true,ticks:{callback:v=>v>=1000?v/1000+'k':v}}
+    }
+  });
+
+  // Tech donut (totals)
+  const totalSolar=D.solar_target.reduce((a,v)=>a+(v||0),0);
+  const totalWind=D.wind_target.reduce((a,v)=>a+(v||0),0);
+  const totalHydro=D.hydro_target.reduce((a,v)=>a+(v||0),0);
+  const totalGas=D.gas_target.reduce((a,v)=>a+(v||0),0);
+  mkChart('chart-tech-donut','doughnut',{
+    labels:['Solar','Wind','Hydro','Gas'],
+    datasets:[{data:[totalSolar,totalWind,totalHydro,totalGas],
+      backgroundColor:[C.yellow,C.sky,C.teal,C.red],borderWidth:2,borderColor:'#fff'}]
+  },{
+    plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Barlow',size:10},padding:8}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw.toFixed(0)} MW`}}}
+  });
+
+  // Renewable capacity bar
+  const rcIdx = D.countries.map((_,i)=>i).filter(i=>D.renew_capacity_current[i]!==null||D.renew_capacity_target[i]!==null)
+    .sort((a,b)=>(D.renew_capacity_target[b]||0)-(D.renew_capacity_target[a]||0));
+  mkChart('chart-renew-capacity', 'bar', {
+    labels: rcIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Current Renew Capacity (MW)',data:rcIdx.map(i=>D.renew_capacity_current[i]),backgroundColor:C.alpha(C.teal,0.75),borderRadius:3},
+      {label:'2030 Renew Target (MW)',data:rcIdx.map(i=>D.renew_capacity_target[i]),backgroundColor:C.alpha(C.green,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?ctx.raw.toFixed(0)+' MW':'—'}`}}},
+    scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// COOKING TAB
+// ══════════════════════════════════════════════════════════════
+function renderCooking() {
+  const ckIdx = D.countries.map((_,i)=>i).filter(i=>D.cooking_current[i]!==null)
+    .sort((a,b)=>D.cooking_current[a]-D.cooking_current[b]);
+
+  mkChart('chart-cooking-grouped', 'bar', {
+    labels: ckIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Current (%)',data:ckIdx.map(i=>D.cooking_current[i]),backgroundColor:C.alpha(C.navy,0.75),borderRadius:3},
+      {label:'2030 Target (%)',data:ckIdx.map(i=>D.cooking_target[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Uplift
+  const uplift = D.countries.map((_,i)=>{
+    const c=D.cooking_current[i], t=D.cooking_target[i];
+    return (c!==null&&t!==null) ? (t-c) : null;
+  });
+  const upIdx = sortedIdxBy(uplift);
+  mkChart('chart-cooking-uplift', 'bar', {
+    labels: upIdx.map(i=>D.countries[i]),
+    datasets:[{
+      label:'Uplift (pp)',
+      data: upIdx.map(i=>uplift[i]),
+      backgroundColor: upIdx.map(i=>(uplift[i]||0)>0.5 ? C.green : (uplift[i]||0)>0.2 ? C.teal : C.sky),
+      borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'+'+(ctx.raw*100).toFixed(1)+' pp'}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Fuel tech mix
+  const techCkIdx = D.countries.map((_,i)=>i).filter(i=>D.cooking_lpg[i]!==null||D.cooking_elec[i]!==null||D.cooking_biogas[i]!==null);
+  mkChart('chart-cooking-tech', 'bar', {
+    labels: techCkIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'LPG',data:techCkIdx.map(i=>D.cooking_lpg[i]),backgroundColor:C.alpha(C.orange,0.85),borderRadius:2},
+      {label:'Electricity',data:techCkIdx.map(i=>D.cooking_elec[i]),backgroundColor:C.alpha(C.yellow,0.85),borderRadius:2},
+      {label:'Biogas',data:techCkIdx.map(i=>D.cooking_biogas[i]),backgroundColor:C.alpha(C.green,0.85),borderRadius:2}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
+    scales:{
+      x:{stacked:true,ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},
+      y:{stacked:true,ticks:{callback:v=>(v*100).toFixed(0)+'%'},max:1}
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// FINANCE TAB
+// ══════════════════════════════════════════════════════════════
+function renderFinance() {
+  const fIdx = D.total_investment.map((v,i)=>({v,i})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v).map(x=>x.i);
+
+  mkChart('chart-finance-stack', 'bar', {
+    labels: fIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Public ($B)',data:fIdx.map(i=>D.public_financing[i]!==null?D.public_financing[i]/1e9:null),backgroundColor:C.alpha(C.navy,0.8),borderRadius:2},
+      {label:'Private ($B)',data:fIdx.map(i=>D.private_financing[i]!==null?D.private_financing[i]/1e9:null),backgroundColor:C.alpha(C.orange,0.8),borderRadius:2}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: $${ctx.raw!==null?ctx.raw.toFixed(1):'?'}B`}}},
+    scales:{
+      x:{stacked:true,ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},
+      y:{stacked:true,ticks:{callback:v=>'$'+v+'B'}}
+    }
+  });
+
+  // Private share
+  const privShare = D.countries.map((_,i)=>{
+    const t=D.total_investment[i], p=D.private_financing[i];
+    return (t&&p) ? p/t : null;
+  });
+  const psIdx = sortedIdxBy(privShare);
+  mkChart('chart-private-share', 'bar', {
+    labels: psIdx.map(i=>D.countries[i]),
+    datasets:[{
+      label:'Private Share',
+      data: psIdx.map(i=>privShare[i]),
+      backgroundColor: psIdx.map(i=>(privShare[i]||0)>0.6 ? C.green : (privShare[i]||0)>0.4 ? C.teal : C.sky),
+      borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>(ctx.raw*100).toFixed(1)+'% private'}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},y:{max:1}}
+  });
+
+  // Per capita
+  const perCap = D.countries.map((_,i)=>{
+    const t=D.total_investment[i], p=D.pop_2024[i];
+    return (t&&p) ? t/(p*1e6) : null;
+  });
+  const pcIdx = sortedIdxBy(perCap);
+  mkChart('chart-invest-capita', 'bar', {
+    labels: pcIdx.map(i=>D.countries[i]),
+    datasets:[{
+      label:'Investment per Capita (USD)',
+      data: pcIdx.map(i=>perCap[i]),
+      backgroundColor: C.alpha(C.teal,0.8),
+      borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.raw.toFixed(0)+' per capita'}}},
+    scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Bubble: gap vs investment
+  const bubbleData = D.countries.map((_,i)=>({
+    x: D.elec_gap_current[i],
+    y: D.total_investment[i]!==null ? D.total_investment[i]/1e9 : null,
+    r: Math.sqrt((D.pop_2024[i]||1))*1.5,
+    label: D.countries[i],
+    inv: D.total_investment[i]
+  })).filter(d=>d.x!==null&&d.y!==null);
+
+  if (chartInstances['chart-bubble-invest']) chartInstances['chart-bubble-invest'].destroy();
+  chartInstances['chart-bubble-invest'] = new Chart(document.getElementById('chart-bubble-invest'), {
+    type:'bubble',
+    data:{datasets:[{
+      label:'Countries',
+      data: bubbleData,
+      backgroundColor: bubbleData.map(d=>d.y>20?C.alpha(C.red,0.6):d.y>10?C.alpha(C.orange,0.6):C.alpha(C.teal,0.6)),
+      borderColor: bubbleData.map(d=>d.y>20?C.red:d.y>10?C.orange:C.teal),
+      borderWidth:1.5
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>{
+          const d=ctx.raw;
+          return [`${d.label}`,`Gap: ${d.x.toFixed(1)}M people`,`Investment: $${d.y.toFixed(1)}B`];
+        }}}
+      },
+      scales:{
+        x:{title:{display:true,text:'Current Electricity Access Gap (Million People)',font:{family:'Barlow',size:11}},grid:{color:'#f0f0f0'}},
+        y:{title:{display:true,text:'Total Investment Required ($B)',font:{family:'Barlow',size:11}},grid:{color:'#f0f0f0'}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILITY TAB
+// ══════════════════════════════════════════════════════════════
+function renderUtility() {
+  // System losses comparison
+  const lossIdx = D.countries.map((_,i)=>i).filter(i=>D.sys_losses_current[i]!==null||D.sys_losses_wb[i]!==null)
+    .sort((a,b)=>(D.sys_losses_current[b]||D.sys_losses_wb[b]||0)-(D.sys_losses_current[a]||D.sys_losses_wb[a]||0));
+  mkChart('chart-losses-compare', 'bar', {
+    labels: lossIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'M300 Self-Reported',data:lossIdx.map(i=>D.sys_losses_current[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3},
+      {label:'World Bank UPBEAT',data:lossIdx.map(i=>D.sys_losses_wb[i]),backgroundColor:C.alpha(C.teal,0.7),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Losses current vs target
+  const ltIdx = D.countries.map((_,i)=>i).filter(i=>D.sys_losses_current[i]!==null||D.sys_losses_target[i]!==null)
+    .sort((a,b)=>(D.sys_losses_current[b]||0)-(D.sys_losses_current[a]||0));
+  mkChart('chart-losses-target', 'bar', {
+    labels: ltIdx.map(i=>D.countries[i]),
+    datasets:[
+      {label:'Current (%)',data:ltIdx.map(i=>D.sys_losses_current[i]),backgroundColor:C.alpha(C.red,0.75),borderRadius:3},
+      {label:'Target (%)',data:ltIdx.map(i=>D.sys_losses_target[i]),backgroundColor:C.alpha(C.green,0.8),borderRadius:3}
+    ]
+  },{
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
+    scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
+  });
+
+  // Utility health scatter
+  const scatterData = D.countries.map((_,i)=>({
+    x: D.cost_recovery_current[i],
+    y: D.collection_rate_current[i],
+    r: Math.sqrt(D.pop_2024[i]||1)*2.5,
+    label: D.countries[i]
+  })).filter(d=>d.x!==null&&d.y!==null);
+
+  if (chartInstances['chart-utility-scatter']) chartInstances['chart-utility-scatter'].destroy();
+  chartInstances['chart-utility-scatter'] = new Chart(document.getElementById('chart-utility-scatter'), {
+    type:'bubble',
+    data:{datasets:[{
+      label:'Utilities',
+      data: scatterData,
+      backgroundColor: scatterData.map(d=>
+        d.x>0.8&&d.y>0.8 ? C.alpha(C.green,0.7) :
+        d.x>0.6&&d.y>0.6 ? C.alpha(C.teal,0.7) :
+        C.alpha(C.red,0.6)
+      ),
+      borderColor:'#fff',borderWidth:1.5
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>{
+          const d=ctx.raw;
+          return [`${d.label}`,`Cost Recovery: ${(d.x*100).toFixed(0)}%`,`Collection Rate: ${(d.y*100).toFixed(0)}%`];
+        }}}
+      },
+      scales:{
+        x:{title:{display:true,text:'Cost Recovery Ratio',font:{family:'Barlow',size:11}},
+           ticks:{callback:v=>(v*100).toFixed(0)+'%'},min:0,max:1.1,grid:{color:'#f0f0f0'}},
+        y:{title:{display:true,text:'Collection Rate',font:{family:'Barlow',size:11}},
+           ticks:{callback:v=>(v*100).toFixed(0)+'%'},min:0,max:1.1,grid:{color:'#f0f0f0'}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// COUNTRY DEEP-DIVE
+// ══════════════════════════════════════════════════════════════
+function initCountry() {
+  const sel = document.getElementById('country-select');
+  D.countries.forEach((c,i)=>{
+    const opt = document.createElement('option');
+    opt.value = i; opt.text = c;
+    sel.appendChild(opt);
+  });
+  renderCountry();
+}
+
+function renderCountry() {
+  const i = parseInt(document.getElementById('country-select').value)||0;
+  const c = D.countries[i];
+
+  document.getElementById('country-radar-title').textContent = `${c} — Profile Radar`;
+
+  // KPIs
+  const kpis = [
+    {label:'Electricity Access',value:pct(D.elec_access_current[i]),sub:'Current',cls:'orange'},
+    {label:'Target 2030',value:pct(D.elec_target_2030[i]),sub:'Electricity',cls:'teal'},
+    {label:'Renewable Share',value:pct(D.renew_share_current[i]),sub:'Current generation mix',cls:'green'},
+    {label:'Total Investment',value:fmtB(D.total_investment[i]),sub:'Required (USD)',cls:''},
+    {label:'Access Gap',value:D.elec_gap_current[i]!==null?D.elec_gap_current[i].toFixed(1)+'M':'—',sub:'People without electricity',cls:'red'},
+    {label:'Clean Cooking',value:pct(D.cooking_current[i]),sub:'Current access',cls:'yellow'},
+  ];
+  document.getElementById('country-kpis').innerHTML = kpis.map(k=>
+    `<div class="kpi ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`
+  ).join('');
+
+  // Radar
+  const norm = (v, min, max) => v===null ? 0 : Math.max(0, Math.min(100, (v-min)/(max-min)*100));
+  const radarData = [
+    norm(D.elec_access_current[i], 0, 1)*100,
+    norm(D.elec_target_2030[i], 0.5, 1)*100,
+    norm(D.renew_share_current[i], 0, 1)*100,
+    norm(D.renew_share_target[i], 0, 1)*100,
+    norm(D.cooking_current[i], 0, 1)*100,
+    norm(D.cooking_target[i], 0, 1)*100,
+    norm(D.total_investment[i], 0, 40e9)*100,
+  ];
+  mkChart('chart-country-radar', 'radar', {
+    labels:['Elec Access\n(Current)','Elec Access\n(Target)','Renew Share\n(Current)','Renew Share\n(Target)','Cooking\n(Current)','Cooking\n(Target)','Investment\n(Scale)'],
+    datasets:[{
+      label:c, data:radarData,
+      backgroundColor:C.alpha(C.navy,0.15),
+      borderColor:C.navy, borderWidth:2, pointBackgroundColor:C.orange, pointRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#e0e6f0'},pointLabels:{font:{family:'Barlow',size:10},color:'#444'}}}
+  });
+
+  // Tech mix donut
+  const tech = [
+    {label:'Solar',v:D.solar_target[i],color:C.yellow},
+    {label:'Wind',v:D.wind_target[i],color:C.sky},
+    {label:'Hydro',v:D.hydro_target[i],color:C.teal},
+    {label:'Gas',v:D.gas_target[i],color:C.red},
+    {label:'Battery (MWh)',v:D.battery_target[i],color:C.purple}
+  ].filter(x=>x.v!==null);
+
+  if (tech.length > 0) {
+    mkChart('chart-country-tech', 'doughnut', {
+      labels:tech.map(t=>t.label),
+      datasets:[{data:tech.map(t=>t.v),backgroundColor:tech.map(t=>t.color),borderWidth:2,borderColor:'#fff'}]
+    },{
+      plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Barlow',size:10},padding:8}},
+      tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw.toFixed(0)} MW`}}}
+    });
+  } else {
+    const ctx2 = document.getElementById('chart-country-tech').getContext('2d');
+    if (chartInstances['chart-country-tech']) chartInstances['chart-country-tech'].destroy();
+    ctx2.font = '14px Barlow';
+    ctx2.fillStyle = '#aaa';
+    ctx2.fillText('No disaggregated tech targets reported', 30, 120);
+  }
+
+  // Progress bars
+  const metrics = [
+    {label:'Electricity Access', current:D.elec_access_current[i], target:D.elec_target_2030[i], unit:'%', scale:1},
+    {label:'Urban Electricity', current:D.elec_access_urban[i], target:null, unit:'%', scale:1},
+    {label:'Rural Electricity', current:D.elec_access_rural[i], target:null, unit:'%', scale:1},
+    {label:'Renewable Share', current:D.renew_share_current[i], target:D.renew_share_target[i], unit:'%', scale:1},
+    {label:'Clean Cooking', current:D.cooking_current[i], target:D.cooking_target[i], unit:'%', scale:1},
+    {label:'System Losses', current:D.sys_losses_current[i], target:D.sys_losses_target[i], unit:'%', scale:1, invert:true},
+  ];
+
+  document.getElementById('country-progress').innerHTML = metrics.filter(m=>m.current!==null||m.target!==null).map(m=>{
+    const curPct = m.current!==null ? m.current*100 : null;
+    const tgtPct = m.target!==null ? m.target*100 : null;
+    const fillW  = curPct !== null ? curPct : 0;
+    const color  = m.invert ? (curPct>30?C.red:C.green) : C.navy;
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:600;color:var(--text)">${m.label}</span>
+        <span style="font-size:12px;color:var(--muted)">
+          ${curPct!==null?curPct.toFixed(1)+'%':'—'}
+          ${tgtPct!==null?' → <b style="color:var(--orange)">'+tgtPct.toFixed(1)+'%</b>':''}
+        </span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${fillW}%;background:${color}"></div>
+      </div>
+      ${tgtPct!==null?`<div style="position:relative;height:4px;"><div style="position:absolute;left:${tgtPct}%;width:2px;height:14px;top:-5px;background:${C.orange};border-radius:1px"></div></div>`:''}
+    </div>`;
+  }).join('');
+
+  // Table
+  const rows = [
+    ['Electricity Access','Current Rate','%', D.elec_access_current[i]!==null?(D.elec_access_current[i]*100).toFixed(1)+'%':'—'],
+    ['Electricity Access','2030 Target','%', D.elec_target_2030[i]!==null?(D.elec_target_2030[i]*100).toFixed(1)+'%':'—'],
+    ['Electricity Access','Urban Access','%', D.elec_access_urban[i]!==null?(D.elec_access_urban[i]*100).toFixed(1)+'%':'—'],
+    ['Electricity Access','Rural Access','%', D.elec_access_rural[i]!==null?(D.elec_access_rural[i]*100).toFixed(1)+'%':'—'],
+    ['Electricity Access','Access Gap (current)','M people', D.elec_gap_current[i]!==null?D.elec_gap_current[i].toFixed(2)+'M':'—'],
+    ['Electricity Access','Access Gap (2030)','M people', D.elec_gap_2030[i]!==null?D.elec_gap_2030[i].toFixed(2)+'M':'—'],
+    ['Generation','Installed Capacity (current)','MW', D.installed_current[i]!==null?D.installed_current[i].toFixed(0)+' MW':'—'],
+    ['Generation','Installed Capacity (2030)','MW', D.installed_target[i]!==null?D.installed_target[i].toFixed(0)+' MW':'—'],
+    ['Generation','Renewable Capacity (current)','MW', D.renew_capacity_current[i]!==null?D.renew_capacity_current[i].toFixed(0)+' MW':'—'],
+    ['Generation','Renewable Capacity (2030)','MW', D.renew_capacity_target[i]!==null?D.renew_capacity_target[i].toFixed(0)+' MW':'—'],
+    ['Generation','Solar Target','MW', D.solar_target[i]!==null?D.solar_target[i].toFixed(0)+' MW':'—'],
+    ['Generation','Wind Target','MW', D.wind_target[i]!==null?D.wind_target[i].toFixed(0)+' MW':'—'],
+    ['Generation','Hydro Target','MW', D.hydro_target[i]!==null?D.hydro_target[i].toFixed(0)+' MW':'—'],
+    ['Generation','Gas Target','MW', D.gas_target[i]!==null?D.gas_target[i].toFixed(0)+' MW':'—'],
+    ['Renewables','Share (current)','%', D.renew_share_current[i]!==null?(D.renew_share_current[i]*100).toFixed(1)+'%':'—'],
+    ['Renewables','Share (2030 target)','%', D.renew_share_target[i]!==null?(D.renew_share_target[i]*100).toFixed(1)+'%':'—'],
+    ['Clean Cooking','Access (current)','%', D.cooking_current[i]!==null?(D.cooking_current[i]*100).toFixed(1)+'%':'—'],
+    ['Clean Cooking','Access (2030 target)','%', D.cooking_target[i]!==null?(D.cooking_target[i]*100).toFixed(1)+'%':'—'],
+    ['Clean Cooking','Gap (current)','M people', D.cooking_gap_current[i]!==null?D.cooking_gap_current[i].toFixed(2)+'M':'—'],
+    ['Finance','Total Investment','USD', fmtB(D.total_investment[i])],
+    ['Finance','Public Financing','USD', fmtB(D.public_financing[i])],
+    ['Finance','Private Financing','USD', fmtB(D.private_financing[i])],
+    ['Utility','System Losses (M300)','%', D.sys_losses_current[i]!==null?(D.sys_losses_current[i]*100).toFixed(1)+'%':'—'],
+    ['Utility','System Losses (WB UPBEAT)','%', D.sys_losses_wb[i]!==null?(D.sys_losses_wb[i]*100).toFixed(1)+'%':'—'],
+    ['Utility','System Loss Target','%', D.sys_losses_target[i]!==null?(D.sys_losses_target[i]*100).toFixed(1)+'%':'—'],
+    ['Population','2024 Population','M', D.pop_2024[i]!==null?D.pop_2024[i].toFixed(1)+'M':'—'],
+    ['Population','2030 Projected','M', D.pop_2030[i]!==null?D.pop_2030[i].toFixed(2)+'M':'—'],
+  ];
+
+  document.querySelector('#country-table tbody').innerHTML = rows.map((r,ri)=>
+    `<tr><td>${r[0]}</td><td>${r[1]}</td><td style="color:var(--muted);font-size:11px">${r[2]}</td><td class="num" style="color:${r[3]==='—'?'#ccc':'var(--navy)'};font-weight:${r[3]==='—'?400:600}">${r[3]}</td></tr>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+renderOverview();
+rendered['overview'] = true;
+</script>
+</body>
+</html>
