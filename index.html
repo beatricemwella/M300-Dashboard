@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>M300 Energy Compacts — Interactive Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Mulish:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --navy:   #1B3A6B;
@@ -23,7 +23,7 @@
     --card:   #FFFFFF;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: 'Mulish', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   /* ── HEADER ── */
   header {
@@ -79,7 +79,7 @@
   }
   .filter-bar label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
   .filter-bar select, .filter-bar input {
-    font-family: 'Barlow', sans-serif; font-size: 13px;
+    font-family: 'Mulish', sans-serif; font-size: 13px;
     border: 1px solid var(--border); border-radius: 6px;
     padding: 6px 10px; background: var(--bg); color: var(--text);
     outline: none; cursor: pointer; transition: border 0.2s;
@@ -631,12 +631,12 @@ function mkChart(id, type, data, opts={}) {
 const defaultScales = (xLabel='', yLabel='', pctY=false, pctX=false) => ({
   x: {
     grid: { color: '#f0f0f0' },
-    ticks: { font: { family:'Barlow', size:10 }, color:'#555',
+    ticks: { font: { family:'Mulish', size:10 }, color:'#555',
       callback: pctX ? v => (v*100).toFixed(0)+'%' : undefined }
   },
   y: {
     grid: { color: '#f0f0f0' },
-    ticks: { font: { family:'Barlow', size:10 }, color:'#555',
+    ticks: { font: { family:'Mulish', size:10 }, color:'#555',
       callback: pctY ? v => (v*100).toFixed(0)+'%' : undefined }
   }
 });
@@ -759,7 +759,7 @@ function renderOverview() {
       borderWidth:2, borderColor:'#fff'
     }]
   },{
-    plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Barlow',size:10},padding:10}},
+    plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Mulish',size:10},padding:10}},
     tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} countries`}}}
   });
 }
@@ -793,7 +793,7 @@ function renderAccess() {
         backgroundColor: C.alpha(C.orange, 0.8), borderRadius:3 }
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw*100).toFixed(1)+'%'}}},
     scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -808,7 +808,7 @@ function renderAccess() {
       {label:'National',data:urIdx.map(i=>D.elec_access_current[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—')}}},
     scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -822,7 +822,7 @@ function renderAccess() {
       {label:'2030 Residual Gap (M)',data:gapIdx2.map(i=>D.elec_gap_2030[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?ctx.raw.toFixed(2)+'M':'—'}`}}},
     scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -861,7 +861,7 @@ function renderGeneration() {
       {label:'2030 Target (MW)',data:capIdx.map(i=>D.installed_target[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?ctx.raw.toFixed(0)+' MW':'—'}`}}},
     scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -876,7 +876,7 @@ function renderGeneration() {
       {label:'2030 Target %',data:rsIdx.map(i=>D.renew_share_target[i]),backgroundColor:C.alpha(C.green,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(0)+'%':'—'}`}}},
     scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -897,7 +897,7 @@ function renderGeneration() {
       {label:'Gas (MW)',data:techIdx.map(i=>D.gas_target[i]),backgroundColor:C.alpha(C.red,0.75),borderRadius:2}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}}},
     scales:{
       ...defaultScales(), x:{stacked:true,ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},
       y:{stacked:true,ticks:{callback:v=>v>=1000?v/1000+'k':v}}
@@ -914,7 +914,7 @@ function renderGeneration() {
     datasets:[{data:[totalSolar,totalWind,totalHydro,totalGas],
       backgroundColor:[C.yellow,C.sky,C.teal,C.red],borderWidth:2,borderColor:'#fff'}]
   },{
-    plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Barlow',size:10},padding:8}},
+    plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Mulish',size:10},padding:8}},
     tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw.toFixed(0)} MW`}}}
   });
 
@@ -928,7 +928,7 @@ function renderGeneration() {
       {label:'2030 Renew Target (MW)',data:rcIdx.map(i=>D.renew_capacity_target[i]),backgroundColor:C.alpha(C.green,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?ctx.raw.toFixed(0)+' MW':'—'}`}}},
     scales:{...defaultScales(), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -948,7 +948,7 @@ function renderCooking() {
       {label:'2030 Target (%)',data:ckIdx.map(i=>D.cooking_target[i]),backgroundColor:C.alpha(C.orange,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
     scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -982,7 +982,7 @@ function renderCooking() {
       {label:'Biogas',data:techCkIdx.map(i=>D.cooking_biogas[i]),backgroundColor:C.alpha(C.green,0.85),borderRadius:2}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
     scales:{
       x:{stacked:true,ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},
@@ -1004,7 +1004,7 @@ function renderFinance() {
       {label:'Private ($B)',data:fIdx.map(i=>D.private_financing[i]!==null?D.private_financing[i]/1e9:null),backgroundColor:C.alpha(C.orange,0.8),borderRadius:2}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: $${ctx.raw!==null?ctx.raw.toFixed(1):'?'}B`}}},
     scales:{
       x:{stacked:true,ticks:{maxRotation:45,font:{size:9}},grid:{display:false}},
@@ -1079,8 +1079,8 @@ function renderFinance() {
         }}}
       },
       scales:{
-        x:{title:{display:true,text:'Current Electricity Access Gap (Million People)',font:{family:'Barlow',size:11}},grid:{color:'#f0f0f0'}},
-        y:{title:{display:true,text:'Total Investment Required ($B)',font:{family:'Barlow',size:11}},grid:{color:'#f0f0f0'}}
+        x:{title:{display:true,text:'Current Electricity Access Gap (Million People)',font:{family:'Mulish',size:11}},grid:{color:'#f0f0f0'}},
+        y:{title:{display:true,text:'Total Investment Required ($B)',font:{family:'Mulish',size:11}},grid:{color:'#f0f0f0'}}
       }
     }
   });
@@ -1100,7 +1100,7 @@ function renderUtility() {
       {label:'World Bank UPBEAT',data:lossIdx.map(i=>D.sys_losses_wb[i]),backgroundColor:C.alpha(C.teal,0.7),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
     scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -1115,7 +1115,7 @@ function renderUtility() {
       {label:'Target (%)',data:ltIdx.map(i=>D.sys_losses_target[i]),backgroundColor:C.alpha(C.green,0.8),borderRadius:3}
     ]
   },{
-    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Barlow',size:10}}},
+    plugins:{legend:{display:true,position:'top',labels:{font:{family:'Mulish',size:10}}},
     tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw!==null?(ctx.raw*100).toFixed(1)+'%':'—'}`}}},
     scales:{...defaultScales('','',true), x:{ticks:{maxRotation:45,font:{size:9}},grid:{display:false}}}
   });
@@ -1151,9 +1151,9 @@ function renderUtility() {
         }}}
       },
       scales:{
-        x:{title:{display:true,text:'Cost Recovery Ratio',font:{family:'Barlow',size:11}},
+        x:{title:{display:true,text:'Cost Recovery Ratio',font:{family:'Mulish',size:11}},
            ticks:{callback:v=>(v*100).toFixed(0)+'%'},min:0,max:1.1,grid:{color:'#f0f0f0'}},
-        y:{title:{display:true,text:'Collection Rate',font:{family:'Barlow',size:11}},
+        y:{title:{display:true,text:'Collection Rate',font:{family:'Mulish',size:11}},
            ticks:{callback:v=>(v*100).toFixed(0)+'%'},min:0,max:1.1,grid:{color:'#f0f0f0'}}
       }
     }
@@ -1212,7 +1212,7 @@ function renderCountry() {
     }]
   },{
     plugins:{legend:{display:false}},
-    scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#e0e6f0'},pointLabels:{font:{family:'Barlow',size:10},color:'#444'}}}
+    scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#e0e6f0'},pointLabels:{font:{family:'Mulish',size:10},color:'#444'}}}
   });
 
   // Tech mix donut
@@ -1229,7 +1229,7 @@ function renderCountry() {
       labels:tech.map(t=>t.label),
       datasets:[{data:tech.map(t=>t.v),backgroundColor:tech.map(t=>t.color),borderWidth:2,borderColor:'#fff'}]
     },{
-      plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Barlow',size:10},padding:8}},
+      plugins:{legend:{display:true,position:'bottom',labels:{font:{family:'Mulish',size:10},padding:8}},
       tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw.toFixed(0)} MW`}}}
     });
   } else {
